@@ -24,6 +24,7 @@ h2{font-size:17px;margin:18px 0 6px}table{border-collapse:collapse;font-size:13p
 <h2>Prognose der Zonengrenzen (nächste 4 Jahre)</h2><div style="overflow-x:auto"><table id="ftab"></table></div>
 <p class="note"><b>Methode:</b> Für jedes preisbasierte Modell (<span id="anch"></span>) wird das Verhältnis Preis/Modell über die gesamte Historie betrachtet. Dessen historische Quantile (3 %, 10 %, 25 %, 40 %, 60 %, 75 %, 90 %, 97 %) werden auf das Modell zurückgerechnet und ergeben je Modell Preisbänder. Das Ribbon ist der Median dieser Bänder über alle Modelle (im Log-Raum), leicht geglättet (7 Tage). „Extrem günstig“ heißt also: der Preis lag nur in ~3 % aller Tage so tief relativ zu den Fundamentalmodellen. Hinweis: Quantile nutzen die ganze Historie (Rückschau), keine Anlageberatung.</p>
 <p class="note"><b>Prognose aus allen KPIs:</b> Alle <span id="nk"></span> KPI-Charts werden einzeln 4 Jahre fortgeschrieben – per Halving-Zyklus-Analogie: Median der Verläufe ab derselben Zyklusphase (heute Tag __PH__ nach dem Halving 2024) in den Zyklen 2012, 2016 und 2020. Die prognostizierten Preismodelle ergeben das künftige Ribbon. Jede KPI wird außerdem über ihre historische Beziehung (Quantil-Zuordnung, Trend-KPIs gegen ihren 4-Jahres-Schnitt bereinigt) in eine Ribbon-Position übersetzt; <span id="nu"></span> KPIs mit |ρ| ≥ 0,2 gehen ein, gewichtet mit ρ². Der gewichtete Median ergibt die gestrichelte Preisprognose, die graue Fläche die 25–75 %-Spanne der KPIs. Reine Fortschreibung vergangener Zyklen – sehr unsicher, keine Anlageberatung.</p>
+<p class="note"><b>Power-Law-Support (blau):</b> log₁₀(Preis) = __PA__ + __PB__ · log₁₀(Tage seit Genesis-Block). Fit über alle Tage ab 2011, dann so weit nach unten verschoben, dass nur 1 % der Tage darunter lagen – der historische Boden, fortgeschrieben bis 2030.</p>
 <p class="note" id="share"></p>
 <details><summary class="note" style="cursor:pointer">Alle KPIs und ihr Einfluss</summary><div style="overflow-x:auto"><table id="ktab"></table></div></details>
 </div><script>
@@ -50,6 +51,8 @@ function build(){
   hovertemplate:'KPI-Spanne %{customdata[0]:$,.0f} – %{customdata[1]:$,.0f}<extra></extra>'});
  tr.push({x:D.fdates,y:Y(D.fp50),customdata:D.fp50.map((v,i)=>[v,names[D.fzone[i]]]),mode:'lines',line:{color:'#ffffff',width:1.8,dash:'dash'},name:'Preisprognose (KPI-Konsens)',
   hovertemplate:'<b>%{x}</b><br>Prognose %{customdata[0]:$,.0f}<br>Zone: %{customdata[1]}<extra></extra>'});
+ tr.push({x:D.dates.concat(D.fdates),y:Y(D.pl.concat(D.fpl)),customdata:D.pl.concat(D.fpl),mode:'lines',line:{color:'#58a6ff',width:2},name:'Power-Law-Support (Boden)',
+  hovertemplate:'Power-Law-Support %{customdata:$,.0f}<extra></extra>'});
  const ya={gridcolor:'#30363d'};
  if(mode==='log'){Object.assign(ya,{type:'log',range:[0,6.3],tickprefix:'$',tickformat:',.0f'})}
  else if(mode==='lin'){Object.assign(ya,{type:'linear',tickprefix:'$',tickformat:',.0f'})}
@@ -67,8 +70,8 @@ const L=D.dates.length-1,z=D.zone[L],b=D.bands.map(x=>x[L]);
 document.getElementById('now').innerHTML=`Stand ${D.dates[L]}: Preis <b>${f(D.price[L])}</b> → Zone <b style="color:${cols[z]}">${names[z]}</b><br><span style="color:#8b949e;font-size:13px">Zonengrenzen heute: ${b.map((v,i)=>names[i]+' &lt; '+f(v)).join(' · ')} · darüber ${names[8]}</span>`;
 document.getElementById('anch').textContent=D.anchors.join(', ');
 document.getElementById('share').textContent='Anteil der Tage je Zone: '+names.map((n,i)=>n+' '+(D.share[i]*100).toFixed(1)+' %').join(' · ');
-document.getElementById('ftab').innerHTML='<tr><th>Datum</th><th>Preis 25 %</th><th>Preis Median</th><th>Preis 75 %</th><th>Zone</th>'+names.slice(0,8).map(n=>`<th>${n} bis</th>`).join('')+'</tr>'+
- D.ftable.map(r=>'<tr><td>'+r[0]+'</td><td>'+f(r[1])+'</td><td><b>'+f(r[2])+'</b></td><td>'+f(r[3])+'</td><td style="color:'+cols[r[4]]+'">'+names[r[4]]+'</td>'+r.slice(5).map((v,i)=>`<td style="border-bottom:3px solid ${cols[i]}">${f(v)}</td>`).join('')+'</tr>').join('');
+document.getElementById('ftab').innerHTML='<tr><th>Datum</th><th>Power-Law-Boden</th><th>Preis 25 %</th><th>Preis Median</th><th>Preis 75 %</th><th>Zone</th>'+names.slice(0,8).map(n=>`<th>${n} bis</th>`).join('')+'</tr>'+
+ D.ftable.map(r=>'<tr><td>'+r[0]+'</td><td style="color:#58a6ff">'+f(D.fpl[D.fdates.indexOf(r[0])])+'</td><td>'+f(r[1])+'</td><td><b>'+f(r[2])+'</b></td><td>'+f(r[3])+'</td><td style="color:'+cols[r[4]]+'">'+names[r[4]]+'</td>'+r.slice(5).map((v,i)=>`<td style="border-bottom:3px solid ${cols[i]}">${f(v)}</td>`).join('')+'</tr>').join('');
 document.getElementById('nk').textContent=D.nk;document.getElementById('nu').textContent=D.nused;
 document.getElementById('ktab').innerHTML='<tr><th style="text-align:left">KPI</th><th>Spearman ρ</th><th>Status</th></tr>'+D.kpis.map(r=>`<tr><td style="text-align:left">${r[0]}</td><td>${r[1]==null?'–':r[1].toFixed(2)}</td><td>${r[2]}</td></tr>`).join('');
 </script></body></html>
