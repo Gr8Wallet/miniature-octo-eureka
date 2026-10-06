@@ -30,8 +30,8 @@ const D=__DATA__;
 const names=['Extrem günstig','Sehr günstig','Günstig','Leicht günstig','Fair','Leicht teuer','Teuer','Sehr teuer','Extrem teuer'];
 const cols=['#1a9850','#66bd63','#a6d96a','#d9ef8b','#ffffbf','#fee08b','#fdae61','#f46d43','#d73027'];
 const f=v=>'$'+Math.round(v).toLocaleString('de-DE');
-// Pseudo-Log: linear um 0, logarithmisch für große Werte (asinh, Umschaltpunkt C)
-const C=1000, T=v=>Math.asinh(v/(2*C)), ext=a=>[a[0].map(v=>v*0.45),...a,a[a.length-1].map(v=>v*2.2)];
+// Pseudo-Log: linear um 0, logarithmisch für große Werte (asinh, sigma = $1)
+const C=1, T=v=>Math.asinh(v/(2*C)), ext=a=>[a[0].map(v=>v*0.45),...a,a[a.length-1].map(v=>v*2.2)];
 let mode='pseudo';
 function Y(a){return mode==='pseudo'?a.map(T):a}
 function build(){
@@ -50,7 +50,7 @@ function build(){
  const ya={gridcolor:'#30363d'};
  if(mode==='log'){Object.assign(ya,{type:'log',range:[0,6.3],tickprefix:'$',tickformat:',.0f'})}
  else if(mode==='lin'){Object.assign(ya,{type:'linear',tickprefix:'$',tickformat:',.0f'})}
- else{const tv=[0,1000,3000,10000,30000,100000,300000,1000000];Object.assign(ya,{type:'linear',tickvals:tv.map(T),ticktext:tv.map(v=>v>=1e6?'$1M':v>=1e3?'$'+v/1e3+'k':'$'+v)})}
+ else{const tv=[0,1,10,100,1000,10000,100000,1000000];Object.assign(ya,{type:'linear',tickvals:tv.map(T),ticktext:tv.map(v=>v>=1e6?'$1M':v>=1e3?'$'+v/1e3+'k':'$'+v)})}
  Plotly.react('chart',tr,{paper_bgcolor:'#0d1117',plot_bgcolor:'#0d1117',font:{color:'#e6edf3'},hovermode:'x',
   margin:{l:60,r:10,t:10,b:40},yaxis:ya,legend:{x:0.01,y:0.99,bgcolor:'rgba(0,0,0,0)'},
   shapes:[{type:'line',x0:D.fdates[0],x1:D.fdates[0],yref:'paper',y0:0,y1:1,line:{color:'#8b949e',dash:'dash',width:1}}],
