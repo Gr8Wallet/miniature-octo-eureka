@@ -12,35 +12,58 @@ h1{font-size:22px;margin:4px 0}.sub{color:var(--mut);font-size:14px;margin-botto
 .lg{padding:4px 8px;border-radius:4px;font-size:12px;color:#000}
 .now{background:var(--card);padding:12px;border-radius:8px;margin:10px 0;font-size:15px}
 .note{color:var(--mut);font-size:13px;line-height:1.5}
+.bar{font-size:13px;color:var(--mut);margin:6px 0}.btn{background:var(--card);color:var(--fg);border:1px solid #30363d;border-radius:4px;padding:3px 10px;margin-left:6px;cursor:pointer}.btn.on{border-color:#e6edf3}
+h2{font-size:17px;margin:18px 0 6px}table{border-collapse:collapse;font-size:13px;white-space:nowrap}td,th{padding:5px 8px;text-align:right}th{color:var(--mut);font-weight:500}
 </style></head><body><div class="wrap">
 <h1>Bitcoin Value Ribbon – historisch günstig ↔ teuer</h1>
-<div class="sub">Datenquelle: alle 176 Charts von charts.blockhorizon.io (API), Konsens aus On-Chain-Preismodellen. Preis in Weiß.</div>
+<div class="sub">Datenquelle: alle 176 Charts von charts.blockhorizon.io (API), Konsens aus On-Chain-Preismodellen. Preis in Weiß, Prognose 4 Jahre.</div>
 <div class="now" id="now"></div>
 <div class="legend" id="legend"></div>
+<div class="bar">Y-Achse: <button class="btn on" data-m="pseudo">Pseudo-Log</button><button class="btn" data-m="log">Log</button><button class="btn" data-m="lin">Linear</button></div>
 <div id="chart"></div>
+<h2>Prognose der Zonengrenzen (nächste 4 Jahre)</h2><div style="overflow-x:auto"><table id="ftab"></table></div>
 <p class="note"><b>Methode:</b> Für jedes preisbasierte Modell (<span id="anch"></span>) wird das Verhältnis Preis/Modell über die gesamte Historie betrachtet. Dessen historische Quantile (3 %, 10 %, 25 %, 40 %, 60 %, 75 %, 90 %, 97 %) werden auf das Modell zurückgerechnet und ergeben je Modell Preisbänder. Das Ribbon ist der Median dieser Bänder über alle Modelle (im Log-Raum), leicht geglättet (7 Tage). „Extrem günstig“ heißt also: der Preis lag nur in ~3 % aller Tage so tief relativ zu den Fundamentalmodellen. Hinweis: Quantile nutzen die ganze Historie (Rückschau), keine Anlageberatung.</p>
+<p class="note"><b>Prognose:</b> Die Mitte des Ribbons (Grenze Leicht günstig/Fair) folgt einem Potenzgesetz über die Zeit seit dem Genesis-Block (Fit ab 2018, Exponent ≈ __B__). Die heutige Abweichung vom Trend (__R__ %) klingt mit 2 Jahren Halbwertszeit ab, die Bandbreiten gleiten auf den Median der letzten 4 Jahre. Prognostiziert werden die Zonen, nicht der Preis – die gepunktete Linie ist die erwartete Fair-Mitte. Reine Extrapolation, große Unsicherheit.</p>
 <p class="note" id="share"></p>
 </div><script>
 const D=__DATA__;
 const names=['Extrem günstig','Sehr günstig','Günstig','Leicht günstig','Fair','Leicht teuer','Teuer','Sehr teuer','Extrem teuer'];
 const cols=['#1a9850','#66bd63','#a6d96a','#d9ef8b','#ffffbf','#fee08b','#fdae61','#f46d43','#d73027'];
-const lo=D.bands[0].map(v=>v*0.45), hi=D.bands[D.bands.length-1].map(v=>v*2.2);
-const edges=[lo,...D.bands,hi];
-const tr=[];
-for(let i=0;i<9;i++){
- tr.push({x:D.dates,y:edges[i],mode:'lines',line:{width:0},hoverinfo:'skip',showlegend:false});
- tr.push({x:D.dates,y:edges[i+1],mode:'lines',line:{width:0.5,color:cols[i]},fill:'tonexty',fillcolor:cols[i]+'b3',name:names[i],
-  hovertemplate:(i<8?names[i]+' bis %{y:$,.0f}':names[i])+'<extra></extra>',showlegend:false});
+const f=v=>'$'+Math.round(v).toLocaleString('de-DE');
+// Pseudo-Log: linear um 0, logarithmisch für große Werte (asinh, Umschaltpunkt C)
+const C=1000, T=v=>Math.asinh(v/(2*C)), ext=a=>[a[0].map(v=>v*0.45),...a,a[a.length-1].map(v=>v*2.2)];
+let mode='pseudo';
+function Y(a){return mode==='pseudo'?a.map(T):a}
+function build(){
+ const tr=[];
+ const parts=[[D.dates,ext(D.bands),'b3',''],[D.fdates,ext(D.fbands),'66',' (Prognose)']];
+ for(const [x,E,al,suf] of parts) for(let i=0;i<9;i++){
+  tr.push({x,y:Y(E[i]),mode:'lines',line:{width:0},hoverinfo:'skip',showlegend:false});
+  tr.push({x,y:Y(E[i+1]),customdata:E[i+1],mode:'lines',line:{width:0.5,color:cols[i]},fill:'tonexty',fillcolor:cols[i]+al,showlegend:false,
+   hovertemplate:(i<8?names[i]+suf+' bis %{customdata:$,.0f}':names[i]+suf)+'<extra></extra>'});
+ }
+ tr.push({x:D.dates,y:Y(D.price),customdata:D.price.map((p,i)=>[p,names[D.zone[i]]]),mode:'lines',line:{color:'#ffffff',width:1.6},name:'BTC Preis',
+  hovertemplate:'<b>%{x}</b><br>Preis %{customdata[0]:$,.0f}<br>Zone: %{customdata[1]}<extra></extra>'});
+ const fair=D.fbands[3].map((v,i)=>Math.sqrt(v*D.fbands[4][i]));
+ tr.push({x:D.fdates,y:Y(fair),customdata:fair,mode:'lines',line:{color:'#ffffff',width:1.2,dash:'dot'},name:'Prognose Fair-Mitte',
+  hovertemplate:'Prognose Fair-Mitte %{customdata:$,.0f}<extra></extra>'});
+ const ya={gridcolor:'#30363d'};
+ if(mode==='log'){Object.assign(ya,{type:'log',range:[0,6.3],tickprefix:'$',tickformat:',.0f'})}
+ else if(mode==='lin'){Object.assign(ya,{type:'linear',tickprefix:'$',tickformat:',.0f'})}
+ else{const tv=[0,1000,3000,10000,30000,100000,300000,1000000];Object.assign(ya,{type:'linear',tickvals:tv.map(T),ticktext:tv.map(v=>v>=1e6?'$1M':v>=1e3?'$'+v/1e3+'k':'$'+v)})}
+ Plotly.react('chart',tr,{paper_bgcolor:'#0d1117',plot_bgcolor:'#0d1117',font:{color:'#e6edf3'},hovermode:'x',
+  margin:{l:60,r:10,t:10,b:40},yaxis:ya,legend:{x:0.01,y:0.99,bgcolor:'rgba(0,0,0,0)'},
+  shapes:[{type:'line',x0:D.fdates[0],x1:D.fdates[0],yref:'paper',y0:0,y1:1,line:{color:'#8b949e',dash:'dash',width:1}}],
+  annotations:[{x:D.fdates[0],yref:'paper',y:1,text:'Prognose →',showarrow:false,xanchor:'left',font:{color:'#8b949e'}}],
+  xaxis:{gridcolor:'#30363d',range:['2012-01-01',D.fdates[D.fdates.length-1]]}},{responsive:true});
 }
-tr.push({x:D.dates,y:D.price,mode:'lines',line:{color:'#ffffff',width:1.6},name:'BTC Preis',
- customdata:D.zone.map(z=>names[z]),hovertemplate:'<b>%{x}</b><br>Preis %{y:$,.0f}<br>Zone: %{customdata}<extra></extra>'});
-Plotly.newPlot('chart',tr,{paper_bgcolor:'#0d1117',plot_bgcolor:'#0d1117',font:{color:'#e6edf3'},hovermode:'x',
- margin:{l:60,r:10,t:10,b:40},yaxis:{type:'log',range:[0,6],gridcolor:'#30363d',tickprefix:'$',tickformat:',.0f'},
- xaxis:{gridcolor:'#30363d',rangeslider:{visible:false},range:['2012-01-01',D.dates[D.dates.length-1]]}},{responsive:true});
+document.querySelectorAll('.btn').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('.btn').forEach(x=>x.classList.toggle('on',x===b));build()});
+build();
 document.getElementById('legend').innerHTML=names.map((n,i)=>`<span class="lg" style="background:${cols[i]}">${n}</span>`).join('');
 const L=D.dates.length-1,z=D.zone[L],b=D.bands.map(x=>x[L]);
-const f=v=>'$'+Math.round(v).toLocaleString('de-DE');
 document.getElementById('now').innerHTML=`Stand ${D.dates[L]}: Preis <b>${f(D.price[L])}</b> → Zone <b style="color:${cols[z]}">${names[z]}</b><br><span style="color:#8b949e;font-size:13px">Zonengrenzen heute: ${b.map((v,i)=>names[i]+' &lt; '+f(v)).join(' · ')} · darüber ${names[8]}</span>`;
 document.getElementById('anch').textContent=D.anchors.join(', ');
 document.getElementById('share').textContent='Anteil der Tage je Zone: '+names.map((n,i)=>n+' '+(D.share[i]*100).toFixed(1)+' %').join(' · ');
+document.getElementById('ftab').innerHTML='<tr><th>Datum</th>'+names.slice(0,8).map(n=>`<th>${n} bis</th>`).join('')+'</tr>'+
+ D.ftable.map(r=>'<tr><td>'+r[0]+'</td>'+r.slice(1).map((v,i)=>`<td style="border-bottom:3px solid ${cols[i]}">${f(v)}</td>`).join('')+'</tr>').join('');
 </script></body></html>
