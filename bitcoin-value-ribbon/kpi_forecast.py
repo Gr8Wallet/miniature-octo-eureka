@@ -1,12 +1,12 @@
 # 4-Jahres-Prognose aus allen KPIs:
-# 1) Jede KPI wird per Halving-Zyklus-Analogie fortgeschrieben (Median der Verläufe ab gleicher Zyklusphase 2012/2016/2020).
+# 1) Jede KPI wird per Halving-Zyklus-Analogie fortgeschrieben (Median der Verläufe ab gleicher Zyklusphase 2012/2016/2020; Tageszuwächse, Median über verfügbare Zyklen).
 # 2) Die 10 Preismodelle (Anker) liefern so das prognostizierte Ribbon.
 # 3) Jede KPI wird (zyklisch bereinigt) per historischer Zuordnung in eine Ribbon-Position übersetzt;
 #    gewichteter Median aller KPIs = Konsens-Position -> Preisprognose (+ 25/75 %-Spanne).
 import json,sys,numpy as np,pandas as pd
 d=json.load(open(sys.argv[1])); R=json.load(open(sys.argv[2]))
 H=pd.to_datetime(['2012-11-28','2016-07-09','2020-05-11','2024-04-20'])
-N=4*365
+N=8*365
 def ser(s):
     df=pd.DataFrame(s['series_data']);df['ts']=pd.to_datetime(df['ts']).dt.tz_localize(None).dt.normalize()
     return pd.to_numeric(df.groupby('ts')['y'].last(),errors='coerce').dropna().asfreq('D').interpolate(limit=30)
@@ -14,16 +14,18 @@ price=ser([s for s in d['118']['series'] if s['series_key']=='price'][0])
 T0=price.index[-1]; fidx=pd.date_range(T0+pd.Timedelta(days=1),periods=N,freq='D')
 phase=(T0-H[-1]).days
 def analog(x,islog):
+    # Tägliche Veränderungen der Zyklen ab gleicher Phase; je Horizont-Tag Median über alle Zyklen mit Daten
     v=np.log(x) if islog else x
-    paths=[]
+    inc=[]
     for h in H[:-1]:
         s=h+pd.Timedelta(days=phase); w=v.reindex(pd.date_range(s,periods=N+1,freq='D'))
-        if w.isna().mean()>0.05 or np.isnan(w.iloc[0]): continue
-        w=w.interpolate().bfill().ffill(); paths.append((w.values[1:]-w.values[0]))
-    if not paths: return None,0
-    p=np.median(np.array(paths),0)
-    last=v.dropna().iloc[-1]; out=last+p
-    return (np.exp(out) if islog else out),len(paths)
+        if np.isnan(w.iloc[0]) or w.iloc[:365].isna().mean()>0.05: continue
+        inc.append(np.diff(w.values))
+    if not inc: return None,0
+    A=np.array(inc); A[:,np.isnan(A).all(0)]=0
+    p=np.cumsum(np.nan_to_num(np.nanmedian(A,0)))
+    out=v.dropna().iloc[-1]+p
+    return (np.exp(out) if islog else out),len(inc)
 kpis={}; meta=[]
 for cid,c in d.items():
     ss=[s for s in c['series'] if s['series_key']!='price' and s.get('series_data')]
