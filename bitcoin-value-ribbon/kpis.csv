@@ -1,0 +1,172 @@
+kpi,spearman_rho,status,analog_cycles
+Spent Outputs 1w–1m,0.15,zu schwach,3
+Price OHLC,0.52,genutzt,3
+Realized Price - Short Term Supply (STS),0.29,genutzt,3
+Difficulty,0.07,zu schwach,3
+CDD 90-Day,0.4,genutzt,3
+Supply Revived 2y+,0.26,genutzt,3
+Supply Revived 5y+,0.13,zu schwach,3
+Supply Last Active 1w–1m,0.37,genutzt,3
+Realized Price - Long Term Supply (LTS),-0.37,genutzt,3
+Supply Last Active 1y+ Ago (%),-0.18,zu schwach,3
+Supply Adjusted,0.05,zu schwach,3
+Supply Last Active 3y+ Ago (%),0.05,zu schwach,3
+Supply Probably Lost,0.02,zu schwach,3
+Transfer Volume 1h–1d,0.02,zu schwach,3
+Blocks Mined,0.24,genutzt,3
+MVRV Index,0.99,genutzt,3
+Spent Outputs 1d–1w,0.09,zu schwach,3
+MVRV (Market Value to Realized Value Ratio),0.99,genutzt,3
+Addresses in Loss,-0.57,genutzt,3
+MVRV Z-Score Index,0.99,genutzt,3
+CDD (Coin Days Destroyed),0.24,genutzt,3
+Delta Price Index,0.94,genutzt,3
+Transfer Volume 6m–12m,0.14,zu schwach,3
+Market Cap,0.39,genutzt,3
+Realized Cap,-0.03,zu schwach,3
+Thermocap,-0.15,zu schwach,3
+Supply Last Active <1d,0.22,genutzt,3
+Valuation Models Category Index,0.99,genutzt,3
+Spent Outputs 1m–3m,0.12,zu schwach,3
+Top Price Index,0.9,genutzt,3
+Realized Price,-0.01,zu schwach,3
+PlanB: Stock to Flow (S2F),-0.04,zu schwach,3
+Supply Long Term (LTS) Position Change,-0.17,zu schwach,3
+NUPL (Net Unrealized Profit Loss),0.99,genutzt,3
+Delta Cap,0.03,zu schwach,3
+Price Drawdown,0.87,genutzt,3
+Transfer Volume 10y+,0.01,zu schwach,3
+Transfer Volume 1w–1m,0.14,zu schwach,3
+Transfer Volume 5y–7y,0.12,zu schwach,3
+Fees Total (Daily),0.29,genutzt,3
+Transfer Volume 3y–5y,0.25,genutzt,3
+UTXOs in Loss,-0.58,genutzt,3
+Supply in Profit,0.49,genutzt,3
+Supply in Loss,-0.85,genutzt,3
+Supply Short Term (STS) in Profit,0.62,genutzt,3
+Supply Short Term (STS) in Loss,-0.46,genutzt,3
+Top Price,-0.2,zu schwach,3
+PlanB: Realized Prices,-0.02,zu schwach,3
+Realized Price: 2 Year,0.06,zu schwach,3
+ASOL: Average Spent Output Lifespan,0.1,zu schwach,3
+Transfer Volume 7y–10y,0.05,zu schwach,3
+Miner Revenue: Fees (%),0.29,genutzt,3
+Supply Last Active 2y–3y,0.11,zu schwach,3
+Supply Short Term (STS),0.38,genutzt,3
+Transfer Volume Total (Daily),0.06,zu schwach,3
+Supply Long Term (LTS),-0.15,zu schwach,3
+UTXO Count,0.12,zu schwach,3
+UTXOs Created,0.11,zu schwach,3
+Supply in Loss (%),-0.9,genutzt,3
+UTXOs in Loss (%),-0.84,genutzt,3
+Transfer Volume in Loss (%),-0.23,genutzt,3
+Fee Ratio Multiple (FRM),-0.3,genutzt,3
+UTXO Value Created Total (Daily),0.17,zu schwach,3
+UTXO Value Created Mean (per Output),0.06,zu schwach,3
+UTXOs Spent,0.04,zu schwach,3
+Addresses in Loss (%),-0.87,genutzt,3
+Coin issuance,-0.29,genutzt,3
+Supply Last Active 6m–12m,-0.35,genutzt,3
+Supply Last Active 3y–5y,0.25,genutzt,3
+Supply Last Active 5y–7y,-0.22,genutzt,3
+Supply in Loss (%): Old vs New Coins,-0.83,genutzt,3
+Realized Price: 4 Year,0.13,zu schwach,3
+Supply Short Term (STS) Position Change,0.18,zu schwach,3
+Addresses Total (Cumulative),0.01,zu schwach,3
+PlanB: Stock to Flow + RSI + MA + Realized,-0.04,zu schwach,3
+Pi Cycle Top Indicator,-0.08,zu schwach,3
+Transfer Volume 1d–1w,0.09,zu schwach,3
+Transfer Volume <1h,0.06,zu schwach,3
+SOPR Long Term Supply (LTS),0.81,genutzt,3
+Spent Outputs 3m–6m,0.09,zu schwach,3
+Spent Outputs 6m–12m,0.07,zu schwach,3
+Supply Last Active 2y+ Ago (%),0.06,zu schwach,3
+Realized Price - Short Term Supply (STS) Index,0.65,genutzt,3
+Supply Last Active 5y+ Ago (%),-0.06,zu schwach,3
+MVRV Short Term Supply (STS) Index,0.65,genutzt,3
+Addresses Active,0.09,zu schwach,3
+Addresses with Non-Zero Balance,0.02,zu schwach,3
+Supply Circulating,0.05,zu schwach,3
+UTXO Value Spent Mean (per Output),0.08,zu schwach,3
+Supply Long Term (LTS) in Profit,0.32,genutzt,3
+Supply Long Term (LTS) in Loss,-0.83,genutzt,3
+Addresses Sending,0.06,zu schwach,3
+Addresses in Profit,0.46,genutzt,3
+Spent Outputs 1y–2y,0.07,zu schwach,3
+Addresses Receiving,0.09,zu schwach,3
+CDD Short Term Supply (STS),0.2,zu schwach,3
+CDD Long Term Supply (LTS),0.23,genutzt,3
+UTXOs in Profit (%),0.84,genutzt,3
+Spent Outputs 1h–1d,-0.04,zu schwach,3
+Spent Outputs 2y–3y,0.11,zu schwach,3
+Cushion Depth Fan,-0.05,zu schwach,3
+Addresses New,0.08,zu schwach,3
+Spent Outputs 3y–5y,0.13,zu schwach,3
+Spent Outputs 5y–7y,0.12,zu schwach,3
+Coin Blocks Created (CBC),0.09,zu schwach,3
+Difficulty Ribbon,0.07,zu schwach,3
+UTXOs in Profit,0.42,genutzt,3
+Days Until Halving,0.52,genutzt,3
+Market Cap to Thermocap Ratio,0.85,genutzt,3
+Supply Last Active 3m–6m,-0.11,zu schwach,3
+Balanced Price,0.02,zu schwach,3
+Block Height,0.05,zu schwach,3
+Transaction Count (Daily),0.03,zu schwach,3
+Total Transactions (Cumulative),0.09,zu schwach,3
+Transaction Rate,0.03,zu schwach,3
+MVRV Z-Score,0.99,genutzt,3
+MVRV Momentum Oscillator,0.64,genutzt,3
+Top Cap,-0.17,zu schwach,3
+Supply Last Active 10y+,-0.03,zu schwach,3
+SOPR (Spent Output Profit Ratio),0.68,genutzt,3
+SOPR Adjusted (aSOPR),0.7,genutzt,3
+Coin Blocks Destroyed (CBD),0.26,genutzt,3
+Miner Revenue: Block Rewards,-0.29,genutzt,3
+Miner Revenue: Total (Daily),-0.22,genutzt,3
+Transfer Volume Mean (per Transaction),0.07,zu schwach,3
+NUPL Index,0.99,genutzt,3
+NUPL Long Term Supply (LTS),0.88,genutzt,3
+Transfer Volume 1m–3m,0.2,genutzt,3
+HODL Waves,0.21,genutzt,3
+Realized Cap HODL Waves,0.81,genutzt,3
+Cost basis Heatmap,,zu schwach,3
+Addresses Accumulation,-0.05,zu schwach,3
+Supply in Profit (%),0.9,genutzt,3
+Supply Revived 1y+,0.21,genutzt,3
+NUPL Short Term Supply (STS),0.71,genutzt,3
+MVRV Long Term Supply (LTS),0.89,genutzt,3
+MVRV Short Term Supply (STS),0.71,genutzt,3
+Fees Mean (per Transaction),0.3,genutzt,3
+"Cost basis distribution (STS, LTS)",0.37,genutzt,3
+Price: 200 Week Moving Average (200WMA),0.06,zu schwach,3
+Price: 50 Week Moving Average (50WMA),0.12,zu schwach,3
+Price: 100 Week Moving Average (100WMA),-0.23,genutzt,3
+PlanB: Moving Averages,0.06,zu schwach,3
+PlanB: RSI,0.94,genutzt,3
+Delta Price,0.04,zu schwach,3
+Supply Last Active 1d–1w,0.29,genutzt,3
+Supply Last Active 1m–3m,0.23,genutzt,3
+Supply Last Active 1y–2y,-0.52,genutzt,3
+Supply Last Active 7y–10y,0.02,zu schwach,3
+Supply Revived 3y+,0.22,genutzt,3
+Transfer Volume 3m–6m,0.16,zu schwach,3
+Transfer Volume 1y–2y,0.11,zu schwach,3
+Transfer Volume 2y–3y,0.22,genutzt,3
+Spent Outputs <1h,0.01,zu schwach,3
+Spent Outputs 7y–10y,0.05,zu schwach,3
+Spent Outputs 10y+,0.01,zu schwach,3
+Market Cap to Thermocap Ratio Index,0.67,genutzt,3
+NUPL Long Term Supply (LTS) Index,0.93,genutzt,3
+Terminal Price,-0.15,zu schwach,3
+BlockHorizon Cycle Index,0.96,genutzt,3
+SOPR Short Term Supply (STS),0.49,genutzt,3
+Realized Price Index,0.99,genutzt,3
+Realized Price - Long Term Supply (LTS) Index,0.9,genutzt,3
+MVRV Long Term Supply (LTS) Index,0.9,genutzt,3
+UTXOs in Profit (%) Index,0.86,genutzt,3
+Balanced Price Index,0.98,genutzt,3
+NUPL Short Term Supply (STS) Index,0.65,genutzt,3
+Holder Behavior Category Index,0.9,genutzt,3
+MVRV Family Category Index,0.94,genutzt,3
+Profit & Loss Category Index,0.93,genutzt,3
+Addresses in Profit (%),0.87,genutzt,3
