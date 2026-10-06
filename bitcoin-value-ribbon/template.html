@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitcoin Value Ribbon</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+<style>
+:root{--bg:#0d1117;--fg:#e6edf3;--mut:#8b949e;--card:#161b22}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1400px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:4px 0}.sub{color:var(--mut);font-size:14px;margin-bottom:12px}
+#chart{width:100%;height:72vh;min-height:420px}
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.lg{padding:4px 8px;border-radius:4px;font-size:12px;color:#000}
+.now{background:var(--card);padding:12px;border-radius:8px;margin:10px 0;font-size:15px}
+.note{color:var(--mut);font-size:13px;line-height:1.5}
+</style></head><body><div class="wrap">
+<h1>Bitcoin Value Ribbon – historisch günstig ↔ teuer</h1>
+<div class="sub">Datenquelle: alle 176 Charts von charts.blockhorizon.io (API), Konsens aus On-Chain-Preismodellen. Preis in Weiß.</div>
+<div class="now" id="now"></div>
+<div class="legend" id="legend"></div>
+<div id="chart"></div>
+<p class="note"><b>Methode:</b> Für jedes preisbasierte Modell (<span id="anch"></span>) wird das Verhältnis Preis/Modell über die gesamte Historie betrachtet. Dessen historische Quantile (3 %, 10 %, 25 %, 40 %, 60 %, 75 %, 90 %, 97 %) werden auf das Modell zurückgerechnet und ergeben je Modell Preisbänder. Das Ribbon ist der Median dieser Bänder über alle Modelle (im Log-Raum), leicht geglättet (7 Tage). „Extrem günstig“ heißt also: der Preis lag nur in ~3 % aller Tage so tief relativ zu den Fundamentalmodellen. Hinweis: Quantile nutzen die ganze Historie (Rückschau), keine Anlageberatung.</p>
+<p class="note" id="share"></p>
+</div><script>
+const D=__DATA__;
+const names=['Extrem günstig','Sehr günstig','Günstig','Leicht günstig','Fair','Leicht teuer','Teuer','Sehr teuer','Extrem teuer'];
+const cols=['#1a9850','#66bd63','#a6d96a','#d9ef8b','#ffffbf','#fee08b','#fdae61','#f46d43','#d73027'];
+const lo=D.bands[0].map(v=>v*0.45), hi=D.bands[D.bands.length-1].map(v=>v*2.2);
+const edges=[lo,...D.bands,hi];
+const tr=[];
+for(let i=0;i<9;i++){
+ tr.push({x:D.dates,y:edges[i],mode:'lines',line:{width:0},hoverinfo:'skip',showlegend:false});
+ tr.push({x:D.dates,y:edges[i+1],mode:'lines',line:{width:0.5,color:cols[i]},fill:'tonexty',fillcolor:cols[i]+'b3',name:names[i],
+  hovertemplate:(i<8?names[i]+' bis %{y:$,.0f}':names[i])+'<extra></extra>',showlegend:false});
+}
+tr.push({x:D.dates,y:D.price,mode:'lines',line:{color:'#ffffff',width:1.6},name:'BTC Preis',
+ customdata:D.zone.map(z=>names[z]),hovertemplate:'<b>%{x}</b><br>Preis %{y:$,.0f}<br>Zone: %{customdata}<extra></extra>'});
+Plotly.newPlot('chart',tr,{paper_bgcolor:'#0d1117',plot_bgcolor:'#0d1117',font:{color:'#e6edf3'},hovermode:'x',
+ margin:{l:60,r:10,t:10,b:40},yaxis:{type:'log',range:[0,6],gridcolor:'#30363d',tickprefix:'$',tickformat:',.0f'},
+ xaxis:{gridcolor:'#30363d',rangeslider:{visible:false},range:['2012-01-01',D.dates[D.dates.length-1]]}},{responsive:true});
+document.getElementById('legend').innerHTML=names.map((n,i)=>`<span class="lg" style="background:${cols[i]}">${n}</span>`).join('');
+const L=D.dates.length-1,z=D.zone[L],b=D.bands.map(x=>x[L]);
+const f=v=>'$'+Math.round(v).toLocaleString('de-DE');
+document.getElementById('now').innerHTML=`Stand ${D.dates[L]}: Preis <b>${f(D.price[L])}</b> → Zone <b style="color:${cols[z]}">${names[z]}</b><br><span style="color:#8b949e;font-size:13px">Zonengrenzen heute: ${b.map((v,i)=>names[i]+' &lt; '+f(v)).join(' · ')} · darüber ${names[8]}</span>`;
+document.getElementById('anch').textContent=D.anchors.join(', ');
+document.getElementById('share').textContent='Anteil der Tage je Zone: '+names.map((n,i)=>n+' '+(D.share[i]*100).toFixed(1)+' %').join(' · ');
+</script></body></html>
