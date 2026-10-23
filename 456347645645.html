@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Great Divergence — Wages vs. Productivity (v1)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { width:100%; height:100%; overflow:hidden; background:#000; font-family:'Arial Black',Arial,sans-serif; color:#FFF; font-weight:900; }
+        canvas { display:block; width:100%; height:100%; cursor:crosshair; touch-action:none; }
+
+        .panel {
+            position:fixed; bottom:24px; left:24px; width:320px;
+            background:rgba(0,0,0,0.95);
+            border:3px solid #F7931A;
+            z-index:100;
+            backdrop-filter:blur(20px);
+            box-shadow:0 0 60px rgba(247,147,26,0.55), inset 0 0 30px rgba(247,147,26,0.08);
+            border-radius:4px;
+        }
+        .panel-header {
+            padding:14px 16px;
+            background:linear-gradient(135deg,#F7931A,#FF6B35);
+            cursor:grab; display:flex; justify-content:space-between; align-items:center;
+            letter-spacing:2px; border-radius:2px 2px 0 0; gap: 24px;
+        }
+        .panel-title { color:#000; font-size:15px; font-weight:900; }
+        .toggle-btn {
+            background:#000; border:none; color:#F7931A;
+            font-size:12px; cursor:pointer; padding:2px 8px;
+            font-weight:900; border-radius:2px;
+            min-width:26px; height:22px; line-height:1;
+            transition: background .15s, transform .15s;
+        }
+        .toggle-btn:hover { background:#222; transform: scale(1.15); }
+        .panel.collapsed .panel-body { display:none; }
+        .panel-body { padding:18px; max-height:70vh; overflow-y:auto; }
+        .panel-body::-webkit-scrollbar { width:6px; }
+        .panel-body::-webkit-scrollbar-thumb { background:#F7931A; border-radius:3px; }
+
+        .control-group { margin-bottom:14px; }
+        .group-label {
+            color:#F7931A; text-transform:uppercase; font-size:12px; font-weight:900;
+            letter-spacing:2px; border-left:4px solid #F7931A; padding-left:10px;
+            margin-bottom:12px;
+            cursor:pointer; user-select:none;
+            display:flex; align-items:center; justify-content:space-between;
+            padding-right:8px;
+            transition: color .15s, background .15s;
+            padding-top:4px; padding-bottom:4px;
+        }
+        .group-label:hover { color:#FFF; background:rgba(247,147,26,0.08); }
+        .group-arrow { font-size:10px; transition: transform .25s; display:inline-block; color:#F7931A; }
+        .control-group.collapsed .group-arrow { transform: rotate(-90deg); }
+        .control-group.collapsed .group-body { display:none; }
+
+        .checkbox-row {
+            display:flex; align-items:center; gap:10px; margin:7px 0; padding:6px;
+            cursor:pointer; border-radius:3px; transition: background .15s, transform .1s;
+        }
+        .checkbox-row:hover { background:rgba(247,147,26,0.12); transform: translateX(2px); }
+        .checkbox-row input { cursor:pointer; accent-color:#F7931A; width:17px; height:17px; }
+        .checkbox-row label { cursor:pointer; font-size:12px; font-weight:900; text-transform:uppercase; letter-spacing:.5px; flex:1; }
+
+        .slider-row { margin:12px 0; }
+        .slider-label { display:flex; justify-content:space-between; font-size:11px; margin-bottom:7px; text-transform:uppercase; font-weight:900; }
+        .slider-label-val { color:#F7931A; font-size:13px; }
+        input[type="range"] {
+            width:100%; height:7px;
+            background:linear-gradient(90deg,rgba(247,147,26,.2),rgba(247,147,26,.35));
+            border-radius:4px; border:none; -webkit-appearance:none; cursor:pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance:none; width:17px; height:17px; border-radius:50%;
+            background:#F7931A; border:2px solid #FFF; cursor:pointer; box-shadow:0 0 12px #F7931A;
+        }
+        .btn-group { display:flex; gap:9px; margin-top:12px; }
+        button {
+            flex:1; background:rgba(247,147,26,.13); border:2px solid #F7931A; color:#F7931A;
+            padding:10px; cursor:pointer; font-family:'Arial Black'; text-transform:uppercase;
+            font-size:11px; font-weight:900; transition:all .18s; border-radius:3px; letter-spacing:1px;
+        }
+        button:hover { background:#F7931A; color:#000; box-shadow:0 0 22px #F7931A; }
+        .stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+        .stat { background:rgba(247,147,26,.08); border:2px solid rgba(247,147,26,.45); padding:11px; border-radius:3px; }
+        .stat-label { font-size:9px; color:#F7931A; text-transform:uppercase; margin-bottom:5px; letter-spacing:1px; }
+        .stat-val { font-size:16px; color:#FFF; font-weight:900; }
+        .hint { font-size:9px; color:#666; margin-top:7px; font-weight:400; line-height:1.4; font-style:italic; }
+
+        #tooltip {
+            position:fixed; z-index:200; pointer-events:none;
+            background:rgba(0,0,0,.97); border:2px solid #F7931A;
+            padding:14px 16px; min-width:240px; max-width:300px;
+            box-shadow:0 0 30px rgba(247,147,26,.5);
+            backdrop-filter:blur(12px);
+            opacity:0; transition: opacity .12s, transform .12s;
+            transform: translateY(4px); border-radius:3px;
+        }
+        #tooltip.show { opacity:1; transform: translateY(0); }
+        .tt-year { color:#F7931A; font-size:20px; font-weight:900; margin-bottom:10px; letter-spacing:1px; padding-bottom:8px; border-bottom:2px solid rgba(247,147,26,.35); }
+        .tt-row { display:flex; justify-content:space-between; gap:14px; margin:5px 0; }
+        .tt-key { color:#999; font-size:11px; text-transform:uppercase; font-weight:400; }
+        .tt-val { color:#FFF; font-weight:900; font-size:14px; }
+        .tt-gap-row { margin-top:9px; padding-top:8px; border-top:1px solid rgba(255,59,59,.3); }
+        .tt-gap { color:#FF3B3B; font-weight:900; font-size:15px; }
+        .tt-note { color:#bbb; font-size:11px; margin-top:11px; font-weight:400; line-height:1.55; padding-top:9px; border-top:1px solid rgba(255,255,255,.1); }
+
+        #shareBar { position:fixed; right:0; top:50%; transform: translateY(-50%); z-index:120; display:flex; align-items:center; }
+        .share-trigger {
+            width:8px; height:140px;
+            background: linear-gradient(180deg, #F7931A, #FF6B35);
+            box-shadow: 0 0 25px rgba(247,147,26,.7);
+            border-radius:6px 0 0 6px; cursor:pointer; transition: width .2s;
+            display:flex; align-items:center; justify-content:center;
+            color:#000; font-weight:900; font-size:10px;
+            writing-mode: vertical-rl; transform: rotate(180deg);
+            letter-spacing:3px; text-transform:uppercase;
+        }
+        .share-trigger:hover { width:14px; }
+        .share-options {
+            background:rgba(0,0,0,0.96);
+            border:3px solid #F7931A; border-right:none;
+            border-radius:6px 0 0 6px; padding:14px 10px;
+            display:flex; flex-direction:column; gap:10px;
+            box-shadow: -10px 0 40px rgba(247,147,26,.5);
+            max-width:0; overflow:hidden; opacity:0;
+            transition: max-width .35s cubic-bezier(.4,0,.2,1), opacity .25s, padding .35s;
+            padding-left:0; padding-right:0;
+        }
+        #shareBar:hover .share-options { max-width:200px; opacity:1; padding-left:12px; padding-right:12px; }
+        .share-btn {
+            display:flex; align-items:center; gap:10px;
+            background: rgba(247,147,26,.1); border:2px solid #F7931A; color:#F7931A;
+            padding:9px 12px; text-decoration:none;
+            font-family:'Arial Black',Arial; font-size:11px; font-weight:900;
+            text-transform:uppercase; letter-spacing:1px; cursor:pointer;
+            transition: all .15s; border-radius:3px; white-space:nowrap; min-width:140px;
+        }
+        .share-btn:hover { background:#F7931A; color:#000; box-shadow:0 0 18px #F7931A; transform: translateX(-3px); }
+        .share-btn .ico { width:18px; height:18px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+        .share-btn svg { width:18px; height:18px; fill:currentColor; }
+
+        #watermark {
+            position:fixed; right:18px; bottom:14px; z-index:80;
+            display:flex; flex-direction:column; align-items:center; line-height:0.85;
+            opacity:0.55; pointer-events:auto;
+            font-family:'Arial Black',Arial; text-decoration:none;
+            transition: opacity .2s, transform .2s; cursor:pointer; user-select:none;
+        }
+        #watermark:hover { opacity:1; transform: scale(1.06); }
+        #watermark .wm-great { color:#FFF; font-weight:900; font-size:16px; letter-spacing:1px; text-shadow: 0 0 8px rgba(0,0,0,0.8); }
+        #watermark .wm-wally { color:#F7931A; font-weight:900; font-size:20px; letter-spacing:1px; text-shadow: 0 0 10px rgba(247,147,26,0.6); }
+
+        @media (max-width: 768px) {
+            .panel { width: calc(100vw - 24px); right: 12px; left: 12px; bottom: 12px; }
+            .panel-body { max-height: 50vh; }
+            #tooltip { min-width: 200px; max-width: 260px; padding:12px 14px; }
+            .tt-year { font-size: 17px; }
+            #shareBar { top: 15%; }
+            .share-trigger { height: 90px; }
+            .share-btn { min-width: 110px; font-size: 10px; padding: 7px 10px; }
+            #watermark { right: 10px; bottom: 8px; }
+            #watermark .wm-great { font-size: 12px; }
+            #watermark .wm-wally { font-size: 15px; }
+        }
+    </style>
+</head>
+<body>
+<canvas id="chart"></canvas>
+<div id="tooltip"></div>
+
+<div class="panel" id="panel">
+    <div class="panel-header" id="panelHeader">
+        <span class="panel-title">EXPLORER · V1</span>
+        <button class="toggle-btn" id="toggleBtn">−</button>
+    </div>
+    <div class="panel-body">
+        <div class="control-group" data-group="layers">
+            <div class="group-label">DATA LAYERS<span class="group-arrow">▼</span></div>
+            <div class="group-body">
+                <div class="checkbox-row"><input type="checkbox" id="chk1" checked><label for="chk1">HOURLY WAGES</label></div>
+                <div class="checkbox-row"><input type="checkbox" id="chk2" checked><label for="chk2">PRODUCTIVITY</label></div>
+                <div class="checkbox-row"><input type="checkbox" id="chk3" checked><label for="chk3">THE GAP</label></div>
+                <div class="checkbox-row"><input type="checkbox" id="chk4" checked><label for="chk4">MILESTONES</label></div>
+                <div class="checkbox-row"><input type="checkbox" id="chk5"><label for="chk5">INFLATION (CPI YoY)</label></div>
+            </div>
+        </div>
+        <div class="control-group collapsed" data-group="time">
+            <div class="group-label">TIME RANGE<span class="group-arrow">▼</span></div>
+            <div class="group-body">
+                <div class="slider-row">
+                    <div class="slider-label"><span>START</span><span class="slider-label-val" id="lbl1">1948</span></div>
+                    <input type="range" id="sld1" min="1948" max="2023" value="1948">
+                </div>
+                <div class="slider-row">
+                    <div class="slider-label"><span>END</span><span class="slider-label-val" id="lbl2">2024</span></div>
+                    <input type="range" id="sld2" min="1949" max="2024" value="2024">
+                </div>
+            </div>
+        </div>
+        <div class="control-group collapsed" data-group="baseline">
+            <div class="group-label">BASELINE = 100<span class="group-arrow">▼</span></div>
+            <div class="group-body">
+                <div class="slider-row">
+                    <div class="slider-label"><span>YEAR</span><span class="slider-label-val" id="lbl3">1948</span></div>
+                    <input type="range" id="sld3" min="1948" max="2024" value="1948">
+                </div>
+                <div class="hint">Drag to reindex from any year. Watch the divergence emerge.</div>
+            </div>
+        </div>
+        <div class="control-group" data-group="stats">
+            <div class="group-label">STATISTICS<span class="group-arrow">▼</span></div>
+            <div class="group-body">
+                <div class="stats">
+                    <div class="stat"><div class="stat-label">Wages Δ</div><div class="stat-val" id="s1">—</div></div>
+                    <div class="stat"><div class="stat-label">Prod Δ</div><div class="stat-val" id="s2">—</div></div>
+                    <div class="stat"><div class="stat-label">Gap</div><div class="stat-val" id="s3">—</div></div>
+                    <div class="stat"><div class="stat-label">Years</div><div class="stat-val" id="s4">—</div></div>
+                </div>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button onclick="resetState()">RESET</button>
+            <button onclick="startAnimation()">▶ REPLAY</button>
+        </div>
+    </div>
+</div>
+
+<div id="shareBar">
+    <div class="share-options">
+        <a class="share-btn" href="https://www.youtube.com/@WalletGreat" target="_blank" rel="noopener" style="background: rgba(255,0,0,.15); border-color:#FF0000; color:#FF6464;">
+            <span class="ico"><svg viewBox="0 0 24 24"><path d="M23.5 6.2c-.3-1-1.1-1.8-2.1-2.1C19.4 3.5 12 3.5 12 3.5s-7.4 0-9.4.6c-1 .3-1.8 1.1-2.1 2.1C0 8.2 0 12 0 12s0 3.8.5 5.8c.3 1 1.1 1.8 2.1 2.1 2 .6 9.4.6 9.4.6s7.4 0 9.4-.6c1-.3 1.8-1.1 2.1-2.1.5-2 .5-5.8.5-5.8s0-3.8-.5-5.8zM9.6 15.6V8.4l6.2 3.6-6.2 3.6z"/></svg></span>YouTube</a>
+        <a class="share-btn" href="#" data-share="x"><span class="ico"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></span>Post on X</a>
+        <a class="share-btn" href="#" data-share="whatsapp"><span class="ico"><svg viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24z"/></svg></span>WhatsApp</a>
+        <a class="share-btn" href="#" data-share="telegram"><span class="ico"><svg viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0z"/></svg></span>Telegram</a>
+        <a class="share-btn" href="#" data-share="linkedin"><span class="ico"><svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.063 2.063 0 112.063 2.065z"/></svg></span>LinkedIn</a>
+        <a class="share-btn" href="#" data-share="copy"><span class="ico"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></span>Copy Link</a>
+    </div>
+    <div class="share-trigger">SHARE</div>
+</div>
+
+<a id="watermark" href="https://www.youtube.com/@WalletGreat" target="_blank" rel="noopener" title="GREAT WALLY · YouTube">
+    <span class="wm-great">GREAT</span>
+    <span class="wm-wally">WALLY</span>
+</a>
+
+<script>
+// ============================================================
+// EASING / HELPERS
+// ============================================================
+const easeOut   = t => 1 - Math.pow(1 - t, 3);
+const easeInOut = t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+const subProg   = (a,b,p) => p<=a?0 : p>=b?1 : (p-a)/(b-a);
+
+// ============================================================
+// RAW DATA — yearly U.S. wages & productivity 1948–2024 (EPI-aligned)
+// Wages stayed flat 1973-1995 (Great Wage Stagnation), productivity grew steadily.
+// ============================================================
+const RAW = [
+ {y:1948,w:100.0,p:100.0},{y:1949,w:102.5,p:101.0},
+ {y:1950,w:106.2,p:107.0},{y:1951,w:109.4,p:110.0},
+ {y:1952,w:112.5,p:113.0},{y:1953,w:115.8,p:117.0},
+ {y:1954,w:117.0,p:119.5},{y:1955,w:120.5,p:124.5},
+ {y:1956,w:124.2,p:126.0},{y:1957,w:127.0,p:129.5},
+ {y:1958,w:129.5,p:132.0},{y:1959,w:133.8,p:138.0},
+ {y:1960,w:137.5,p:142.0},{y:1961,w:140.5,p:147.0},
+ {y:1962,w:144.5,p:154.0},{y:1963,w:148.0,p:160.0},
+ {y:1964,w:153.0,p:165.5},{y:1965,w:158.5,p:171.0},
+ {y:1966,w:164.0,p:177.0},{y:1967,w:169.0,p:180.0},
+ {y:1968,w:175.5,p:186.0},{y:1969,w:181.0,p:189.0},
+ {y:1970,w:185.0,p:194.0},{y:1971,w:188.5,p:201.0},
+ {y:1972,w:191.5,p:209.0},{y:1973,w:193.0,p:215.5},
+ {y:1974,w:191.0,p:211.0},{y:1975,w:189.5,p:215.0},
+ {y:1976,w:191.5,p:220.0},{y:1977,w:192.5,p:222.0},
+ {y:1978,w:193.5,p:225.0},{y:1979,w:193.0,p:225.5},
+ {y:1980,w:189.5,p:225.0},{y:1981,w:189.0,p:228.0},
+ {y:1982,w:189.0,p:227.0},{y:1983,w:190.0,p:235.0},
+ {y:1984,w:191.5,p:243.0},{y:1985,w:192.5,p:248.0},
+ {y:1986,w:194.0,p:254.0},{y:1987,w:193.0,p:257.0},
+ {y:1988,w:193.5,p:262.0},{y:1989,w:192.5,p:265.0},
+ {y:1990,w:192.0,p:268.0},{y:1991,w:192.5,p:271.0},
+ {y:1992,w:194.0,p:280.0},{y:1993,w:193.5,p:282.0},
+ {y:1994,w:193.5,p:287.0},{y:1995,w:193.0,p:289.0},
+ {y:1996,w:194.5,p:296.0},{y:1997,w:198.0,p:303.0},
+ {y:1998,w:203.0,p:312.0},{y:1999,w:208.5,p:319.0},
+ {y:2000,w:212.0,p:326.0},{y:2001,w:213.5,p:332.0},
+ {y:2002,w:215.0,p:343.0},{y:2003,w:216.5,p:355.0},
+ {y:2004,w:216.0,p:364.0},{y:2005,w:215.5,p:370.0},
+ {y:2006,w:214.5,p:372.0},{y:2007,w:216.0,p:374.0},
+ {y:2008,w:217.5,p:374.0},{y:2009,w:222.5,p:381.0},
+ {y:2010,w:222.0,p:392.0},{y:2011,w:218.0,p:392.0},
+ {y:2012,w:217.0,p:395.0},{y:2013,w:219.0,p:397.0},
+ {y:2014,w:220.0,p:399.0},{y:2015,w:226.0,p:402.0},
+ {y:2016,w:229.0,p:403.0},{y:2017,w:231.0,p:406.0},
+ {y:2018,w:233.0,p:410.0},{y:2019,w:237.0,p:411.0},
+ {y:2020,w:245.0,p:425.0},{y:2021,w:251.0,p:393.0},
+ {y:2022,w:247.0,p:390.0},{y:2023,w:248.0,p:392.0},
+ {y:2024,w:248.5,p:394.0}
+];
+
+// CPI YoY (%) — U.S. annual inflation 1948-2024
+const CPI_YOY = {
+ 1948:8.1,1949:-1.2,1950:1.3,1951:7.9,1952:1.9,1953:0.8,1954:0.7,1955:-0.4,1956:1.5,1957:3.3,
+ 1958:2.8,1959:0.7,1960:1.7,1961:1.0,1962:1.0,1963:1.3,1964:1.3,1965:1.6,1966:2.9,1967:3.1,
+ 1968:4.2,1969:5.5,1970:5.7,1971:4.4,1972:3.2,1973:6.2,1974:11.0,1975:9.1,1976:5.8,1977:6.5,
+ 1978:7.6,1979:11.3,1980:13.5,1981:10.3,1982:6.2,1983:3.2,1984:4.3,1985:3.6,1986:1.9,1987:3.6,
+ 1988:4.1,1989:4.8,1990:5.4,1991:4.2,1992:3.0,1993:3.0,1994:2.6,1995:2.8,1996:2.9,1997:2.3,
+ 1998:1.6,1999:2.2,2000:3.4,2001:2.8,2002:1.6,2003:2.3,2004:2.7,2005:3.4,2006:3.2,2007:2.8,
+ 2008:3.8,2009:-0.4,2010:1.6,2011:3.2,2012:2.1,2013:1.5,2014:1.6,2015:0.1,2016:1.3,2017:2.1,
+ 2018:2.4,2019:1.8,2020:1.2,2021:4.7,2022:8.0,2023:4.1,2024:2.9
+};
+
+// Yearly notes for tooltip context
+const NOTES = {
+ 1948:"Post-WWII boom. Wages and productivity grow in lockstep.",
+ 1955:"Golden era. Union coverage ~35% of U.S. workers. Shared prosperity.",
+ 1965:"Peak wage-productivity alignment. Median family income doubles since 1945.",
+ 1971:"Nixon ends dollar-gold convertibility. Inflation unleashed.",
+ 1973:"Oil shock + stagflation. THE inflection: wages plateau, productivity diverges.",
+ 1980:"Reagan elected. Top marginal tax rate cut 70%→50%. Union-busting begins.",
+ 1985:"Plaza Accord. Manufacturing begins shifting offshore.",
+ 1990:"Financialization era. Capital returns outpace labor returns.",
+ 1994:"NAFTA signed.",
+ 2000:"Dot-com peak. Productivity surges. Wages barely move.",
+ 2008:"Global financial crisis. Banks bailed out. Workers bear austerity.",
+ 2009:"Bitcoin genesis block.",
+ 2020:"COVID stimulus. Wages temporarily jump. Productivity briefly surges.",
+ 2022:"Inflation at 40-year high. Real wages fall.",
+ 2024:"Gap: Wages +149% vs Productivity +294%."
+};
+
+// Milestone pills (well-spaced, no overlap)
+const MILESTONES = [
+ {year:1971, label:"The Break — 1971",   color:"#FF3B3B"},
+ {year:2008, label:"Financial Crisis",   color:"#FFD700"},
+];
+
+// Top-row inflation shock chevrons
+const SHOCKS = [
+ {year:1974, label:"Oil Shock"},
+ {year:1979, label:"Iran Crisis"},
+ {year:1990, label:"Gulf War"},
+ {year:2022, label:"COVID Inflation"},
+];
+
+// State
+let S = {show1:true,show2:true,show3:true,show4:true,show5:false, y1:1948,y2:2024,base:1948};
+
+// Per-layer 4s tween
+const ANIM_LAYER_MS = 4000;
+const layerAnim  = {1:1, 2:1, 3:1, 4:1, 5:0};
+const layerTween = {
+    1:{start:1, target:1, t0:0}, 2:{start:1, target:1, t0:0},
+    3:{start:1, target:1, t0:0}, 4:{start:1, target:1, t0:0},
+    5:{start:0, target:0, t0:0}
+};
+function setLayer(i, on) {
+    S['show'+i] = on;
+    const tw = layerTween[i];
+    tw.start = layerAnim[i];
+    tw.target = on ? 1 : 0;
+    tw.t0 = performance.now();
+}
+function updateLayerAnim() {
+    for (let i = 1; i <= 5; i++) {
+        const tw = layerTween[i];
+        if (layerAnim[i] === tw.target) continue;
+        const t = Math.min(1, (performance.now() - tw.t0) / ANIM_LAYER_MS);
+        const e = easeInOut(t);
+        layerAnim[i] = tw.start + (tw.target - tw.start) * e;
+        if (t >= 1) layerAnim[i] = tw.target;
+    }
+}
+
+let animActive = true;
+let animStart = performance.now();
+const ANIM_DURATION = 30000;
+
+const canvas = document.getElementById('chart');
+const ctx    = canvas.getContext('2d');
+const DPR    = window.devicePixelRatio || 1;
+
+const RAW_MAP = {};
+RAW.forEach(d => RAW_MAP[d.y] = d);
+
+function reindex(base) {
+    const b = RAW_MAP[base] || RAW[0];
+    return RAW.map(d => ({year:d.y, w:(d.w/b.w)*100, p:(d.p/b.p)*100}));
+}
+
+let mx = -1, my = -1;
+const PARTICLES = [];
+function initParticles() {
+    PARTICLES.length = 0;
+    const N = Math.min(60, Math.floor((innerWidth * innerHeight) / 25000));
+    for (let i = 0; i < N; i++) {
+        PARTICLES.push({
+            x: Math.random()*innerWidth, y: Math.random()*innerHeight,
+            vx: (Math.random()-0.5)*0.15, vy: (Math.random()-0.5)*0.15,
+            r: Math.random()*1.4+0.4, twinkle: Math.random()*Math.PI*2
+        });
+    }
+}
+function resize() {
+    canvas.width  = innerWidth  * DPR;
+    canvas.height = innerHeight * DPR;
+    canvas.style.width  = innerWidth  + 'px';
+    canvas.style.height = innerHeight + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    initParticles();
+}
+resize();
+addEventListener('resize', resize);
+initParticles();
+
+document.addEventListener('mousemove', e => { if (!dragging) { mx = e.clientX; my = e.clientY; } });
+canvas.addEventListener('touchstart', e => { const t=e.touches[0]; mx=t.clientX; my=t.clientY; }, {passive:true});
+canvas.addEventListener('touchmove',  e => { const t=e.touches[0]; mx=t.clientX; my=t.clientY; e.preventDefault(); }, {passive:false});
+canvas.addEventListener('touchend',   () => { mx=-1; my=-1; document.getElementById('tooltip').classList.remove('show'); });
+canvas.addEventListener('mouseleave', () => { mx=-1; my=-1; document.getElementById('tooltip').classList.remove('show'); });
+
+const panel = document.getElementById('panel');
+const hdr   = document.getElementById('panelHeader');
+let dragging = false, ox = 0, oy = 0;
+hdr.addEventListener('mousedown', e => {
+    if (e.target.tagName === 'BUTTON') return;
+    dragging = true;
+    ox = e.clientX - panel.offsetLeft;
+    oy = e.clientY - panel.offsetTop;
+});
+document.addEventListener('mouseup', () => { dragging = false; });
+document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    panel.style.right = 'auto'; panel.style.bottom = 'auto';
+    panel.style.left = (e.clientX - ox) + 'px';
+    panel.style.top  = (e.clientY - oy) + 'px';
+});
+
+document.getElementById('toggleBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    panel.classList.toggle('collapsed');
+    e.target.textContent = panel.classList.contains('collapsed') ? '+' : '−';
+});
+
+document.querySelectorAll('.group-label').forEach(lbl => {
+    lbl.addEventListener('click', () => lbl.parentElement.classList.toggle('collapsed'));
+});
+
+[1,2,3,4,5].forEach(i => {
+    const el = document.getElementById('chk'+i);
+    el && el.addEventListener('change', () => setLayer(i, el.checked));
+});
+
+document.getElementById('sld1').addEventListener('input', e => {
+    S.y1 = Math.min(parseInt(e.target.value), S.y2 - 1);
+    e.target.value = S.y1;
+    document.getElementById('lbl1').textContent = S.y1;
+});
+document.getElementById('sld2').addEventListener('input', e => {
+    S.y2 = Math.max(parseInt(e.target.value), S.y1 + 1);
+    e.target.value = S.y2;
+    document.getElementById('lbl2').textContent = S.y2;
+});
+document.getElementById('sld3').addEventListener('input', e => {
+    S.base = parseInt(e.target.value);
+    document.getElementById('lbl3').textContent = S.base;
+});
+
+function resetState() {
+    S.y1 = 1948; S.y2 = 2024; S.base = 1948;
+    document.getElementById('sld1').value = 1948;
+    document.getElementById('sld2').value = 2024;
+    document.getElementById('sld3').value = 1948;
+    document.getElementById('lbl1').textContent = 1948;
+    document.getElementById('lbl2').textContent = 2024;
+    document.getElementById('lbl3').textContent = 1948;
+    [1,2,3,4].forEach(i => { const el = document.getElementById('chk'+i); if (el) el.checked = true; setLayer(i, true); });
+    const cb5 = document.getElementById('chk5'); if (cb5) cb5.checked = false; setLayer(5, false);
+}
+function startAnimation() { animActive = true; animStart = performance.now(); }
+
+// Share
+function buildShareUrl() {
+    const params = new URLSearchParams();
+    params.set('y1', S.y1); params.set('y2', S.y2); params.set('base', S.base);
+    return location.origin + location.pathname + '?' + params.toString();
+}
+const SHARE_TITLE = 'The Great Divergence: U.S. Wages vs. Productivity, 1948–2024';
+const SHARE_TEXT  = 'Worker pay has not kept pace with productivity since 1971. Explore the data yourself:';
+document.querySelectorAll('[data-share]').forEach(btn => {
+    btn.addEventListener('click', e => {
+        e.preventDefault();
+        const url = encodeURIComponent(buildShareUrl());
+        const text = encodeURIComponent(SHARE_TEXT);
+        const title = encodeURIComponent(SHARE_TITLE);
+        const kind = btn.getAttribute('data-share');
+        let target = '';
+        switch (kind) {
+            case 'x':        target = `https://twitter.com/intent/tweet?text=${text}&url=${url}`; break;
+            case 'whatsapp': target = `https://wa.me/?text=${text}%20${url}`; break;
+            case 'telegram': target = `https://t.me/share/url?url=${url}&text=${text}`; break;
+            case 'linkedin': target = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`; break;
+            case 'copy':
+                navigator.clipboard.writeText(buildShareUrl()).then(() => {
+                    btn.innerHTML = '<span class="ico">✓</span> COPIED!';
+                    setTimeout(() => location.reload(), 1200);
+                });
+                return;
+        }
+        if (target) window.open(target, '_blank', 'noopener');
+    });
+});
+
+// ============================================================
+// DRAW
+// ============================================================
+function draw() {
+    updateLayerAnim();
+    const W = innerWidth, H = innerHeight;
+    const isMobile = W < 768;
+    const Lw = layerAnim[1], Lp = layerAnim[2], Lg = layerAnim[3], Lm = layerAnim[4], Linf = layerAnim[5];
+
+    const m = isMobile
+        ? {top:60, right:30, bottom: H * 0.45 + 30, left:60}
+        : {top:130, right:180, bottom:100, left:90};
+    const cw = W - m.left - m.right;
+    const ch = H - m.top - m.bottom;
+    const x0 = m.left, y0 = m.top + ch;
+
+    let progress = animActive ? Math.min(1, (performance.now() - animStart) / ANIM_DURATION) : 1;
+    if (progress >= 1) animActive = false;
+
+    const pAxes     = subProg(0.05, 0.22, progress);
+    const pYlabels  = subProg(0.10, 0.20, progress);
+    const pXlabels  = subProg(0.15, 0.25, progress);
+    const pWages    = subProg(0.22, 0.45, progress);
+    const pProd     = subProg(0.32, 0.58, progress);
+    const pGap      = subProg(0.50, 0.70, progress);
+    const pMileston = subProg(0.65, 0.82, progress);
+    const pTitle    = subProg(0.75, 0.95, progress);
+    const pEndDots  = subProg(0.85, 1.00, progress);
+
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, W, H);
+
+    // Aurora
+    const auroraGrad = ctx.createRadialGradient(W*0.6, H+100, 0, W*0.6, H+100, H*0.9);
+    auroraGrad.addColorStop(0, 'rgba(247,147,26,0.10)');
+    auroraGrad.addColorStop(0.4, 'rgba(247,147,26,0.04)');
+    auroraGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = auroraGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Particles
+    const now = performance.now();
+    ctx.save();
+    PARTICLES.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x<0) p.x=W; else if (p.x>W) p.x=0;
+        if (p.y<0) p.y=H; else if (p.y>H) p.y=0;
+        const tw = 0.4 + 0.6 * (Math.sin(now/800 + p.twinkle)*0.5 + 0.5);
+        const grd = ctx.createRadialGradient(p.x,p.y,0, p.x,p.y, p.r*5);
+        grd.addColorStop(0, `rgba(247,147,26,${0.55*tw})`);
+        grd.addColorStop(1, 'rgba(247,147,26,0)');
+        ctx.fillStyle = grd;
+        ctx.beginPath(); ctx.arc(p.x,p.y, p.r*5, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.restore();
+
+    // Data
+    const allIndexed = reindex(S.base);
+    const filtered = allIndexed.filter(d => d.year >= S.y1 && d.year <= S.y2);
+    if (filtered.length < 2) return;
+
+    const minYear = filtered[0].year, maxYear = filtered[filtered.length-1].year;
+    const yearSpan = maxYear - minYear || 1;
+
+    const allW = filtered.map(d=>d.w), allP = filtered.map(d=>d.p);
+    const dataMin = Math.min(...allW, ...allP);
+    const dataMax = Math.max(...allW, ...allP);
+    const pad  = (dataMax - dataMin) * 0.12;
+    const yMin = dataMin - pad;
+    const yMax = dataMax + pad;
+    const yRange = yMax - yMin;
+
+    const xP = yr  => x0 + (yr - minYear) / yearSpan * cw;
+    const yP = val => y0 - (val - yMin) / yRange * ch;
+
+    const rawStep    = (yMax - yMin) / 5;
+    const tickStep   = Math.ceil(rawStep / 25) * 25;
+    const tickStart  = Math.ceil(yMin / tickStep) * tickStep;
+    const labelMaxN = Math.max(3, Math.floor(cw / (isMobile ? 80 : 110)));
+    const rawXStep  = yearSpan / labelMaxN;
+    const xStep     = rawXStep <= 1 ? 1 : rawXStep <= 2 ? 2 : rawXStep <= 5 ? 5 : rawXStep <= 10 ? 10 : rawXStep <= 20 ? 20 : 25;
+
+    // Gridlines
+    ctx.save();
+    ctx.globalAlpha = pAxes;
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    for (let v = tickStart; v <= yMax; v += tickStep) {
+        const yp = yP(v);
+        ctx.beginPath(); ctx.moveTo(x0, yp); ctx.lineTo(x0+cw, yp); ctx.stroke();
+    }
+    for (let y = Math.ceil(minYear/xStep)*xStep; y <= maxYear; y += xStep) {
+        const xp = xP(y);
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.beginPath(); ctx.moveTo(xp, m.top); ctx.lineTo(xp, y0); ctx.stroke();
+    }
+    ctx.restore();
+
+    // INFLATION BARS (L→R wavefront when layer toggles)
+    if (Linf > 0.001) {
+        const infMin = -2, infMax = 16;
+        const infRange = infMax - infMin;
+        const yI = pct => y0 - (pct - infMin) / infRange * ch;
+        const pxPerYear = cw / yearSpan;
+        const barW = Math.max(2, pxPerYear * 0.72);
+        const GROW_WINDOW = 70;
+        const waveFront = x0 + (cw + GROW_WINDOW) * Linf;
+
+        ctx.save();
+        filtered.forEach(d => {
+            const v = CPI_YOY[d.year];
+            if (v == null) return;
+            const xp = xP(d.year);
+            const distFromFront = waveFront - xp;
+            const localGrow = Math.max(0, Math.min(1, distFromFront / GROW_WINDOW));
+            if (localGrow <= 0) return;
+            const grow = easeOut(localGrow);
+            const isDeflation = v < 0;
+            const tCol = Math.min(1, Math.max(0, v / 12));
+            const r = isDeflation ? 90  : 255;
+            const g = isDeflation ? 180 : Math.round(180 - 140 * tCol);
+            const b = isDeflation ? 255 : Math.round(80  - 80  * tCol);
+            const zeroY = yI(0);
+            const fullTop = yI(Math.max(v, 0));
+            const fullBot = yI(Math.min(v, 0));
+            const yTop = zeroY + (fullTop - zeroY) * grow;
+            const yBot = zeroY + (fullBot - zeroY) * grow;
+            const grd = ctx.createLinearGradient(0, yTop, 0, yBot);
+            grd.addColorStop(0, `rgba(${r},${g},${b},${0.55 * 0.92})`);
+            grd.addColorStop(1, `rgba(${r},${g},${b},${0.55 * 0.25})`);
+            ctx.fillStyle = grd;
+            ctx.fillRect(xp - barW/2, yTop, barW, yBot - yTop);
+            ctx.fillStyle = `rgba(${r},${g},${b},0.85)`;
+            ctx.fillRect(xp - barW/2, yTop, barW, 1.5);
+        });
+        ctx.restore();
+
+        // Right Y axis
+        ctx.save();
+        ctx.globalAlpha = Linf;
+        const axisX = x0 + cw;
+        ctx.strokeStyle = '#FF6B35';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = 'rgba(255,107,53,0.4)';
+        ctx.shadowBlur = 10;
+        ctx.beginPath(); ctx.moveTo(axisX, m.top); ctx.lineTo(axisX, y0); ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#FF8C5A';
+        ctx.font = '900 ' + (isMobile ? 12 : 15) + 'px "Arial Black",Arial';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        [0, 5, 10, 15].forEach(pct => {
+            const yp = yI(pct);
+            ctx.strokeStyle = '#FF8C5A'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(axisX, yp); ctx.lineTo(axisX + 10, yp); ctx.stroke();
+            ctx.fillText(pct + '%', axisX + 14, yp);
+        });
+        ctx.translate(W - 22, m.top + ch/2);
+        ctx.rotate(Math.PI/2);
+        ctx.fillStyle = 'rgba(255,140,90,0.85)';
+        ctx.font = '900 ' + (isMobile ? 11 : 13) + 'px "Arial Black",Arial';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('CPI YoY — ANNUAL INFLATION %', 0, 0);
+        ctx.restore();
+    }
+
+    // THE GAP — continuous color gradient
+    const gapVisible = Math.min(Lg, Lw, Lp);
+    if (gapVisible > 0.001 && pGap > 0) {
+        const maxGap = Math.max(...filtered.map(d => Math.max(0, d.p - d.w)));
+        function interp(yr) {
+            if (yr <= filtered[0].year) return filtered[0];
+            if (yr >= filtered[filtered.length-1].year) return filtered[filtered.length-1];
+            for (let i=0; i<filtered.length-1; i++) {
+                if (filtered[i].year <= yr && filtered[i+1].year >= yr) {
+                    const t = (yr - filtered[i].year) / (filtered[i+1].year - filtered[i].year);
+                    return {
+                        w: filtered[i].w + (filtered[i+1].w - filtered[i].w) * t,
+                        p: filtered[i].p + (filtered[i+1].p - filtered[i].p) * t,
+                    };
+                }
+            }
+            return filtered[filtered.length-1];
+        }
+        const visibleWidth = cw * easeOut(pGap);
+        const SEG = 2;
+        for (let px = 0; px < Math.min(cw, visibleWidth); px += SEG) {
+            const yr  = minYear + (px / cw) * yearSpan;
+            const pt  = interp(yr);
+            const gap = Math.max(0, pt.p - pt.w);
+            if (gap <= 0) continue;
+            const t = maxGap > 0 ? Math.min(1, gap / maxGap) : 0;
+            const r = 255;
+            const g = Math.round(147 - 147 * t);
+            const b = Math.round(26  - 26  * t);
+            const ytop = yP(pt.p);
+            const ybot = yP(pt.w);
+            const segH = ybot - ytop;
+            if (segH <= 0) continue;
+            const grad = ctx.createLinearGradient(0, ytop, 0, ybot);
+            const alpha = (0.15 + t * 0.50) * gapVisible;
+            grad.addColorStop(0,   `rgba(${r},${g},${b},${alpha})`);
+            grad.addColorStop(0.6, `rgba(${r},${g},${b},${(alpha*0.4).toFixed(3)})`);
+            grad.addColorStop(1,   `rgba(${r},${g},${b},${(0.01*gapVisible).toFixed(3)})`);
+            ctx.fillStyle = grad;
+            ctx.fillRect(x0 + px, ytop, SEG + 1, segH);
+        }
+    }
+
+    // INFLATIONARY SHOCKS — compact chevrons at top
+    if (Lm > 0.001 && pMileston > 0) {
+        SHOCKS.forEach((sh, idx) => {
+            if (sh.year < minYear || sh.year > maxYear) return;
+            const xp = xP(sh.year);
+            const shockProg = subProg(idx * 0.04, idx * 0.04 + 0.18, pMileston);
+            const op = easeOut(shockProg) * Lm;
+            if (op <= 0) return;
+            ctx.save();
+            ctx.globalAlpha = op;
+            const dashShift = (now / 80) % 12;
+            ctx.strokeStyle = 'rgba(255,140,0,0.32)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 9]);
+            ctx.lineDashOffset = -dashShift;
+            ctx.beginPath(); ctx.moveTo(xp, m.top + 26); ctx.lineTo(xp, y0); ctx.stroke();
+            ctx.setLineDash([]);
+            const chevY = m.top + 12;
+            ctx.fillStyle = '#FFB066';
+            ctx.beginPath();
+            ctx.moveTo(xp, chevY + 7);
+            ctx.lineTo(xp - 5, chevY);
+            ctx.lineTo(xp + 5, chevY);
+            ctx.closePath();
+            ctx.shadowColor = '#FF8C00'; ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(255,176,102,0.9)';
+            ctx.font = `900 ${isMobile ? 9 : 11}px "Arial Black",Arial`;
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.save();
+            ctx.translate(xp + 4, m.top - 2);
+            ctx.rotate(-Math.PI / 4);
+            ctx.fillText(`${sh.year} · ${sh.label}`, 0, 0);
+            ctx.restore();
+            ctx.restore();
+        });
+    }
+
+    // MILESTONES — auto-stagger pills below shock chevrons
+    if (Lm > 0.001 && pMileston > 0) {
+        ctx.font = `900 ${isMobile ? 13 : 16}px "Arial Black",Arial`;
+        const pillInfo = MILESTONES
+            .filter(ms => ms.year >= minYear && ms.year <= maxYear)
+            .map(ms => ({ ms, xp: xP(ms.year), w: ctx.measureText(ms.label).width + 20 }));
+        const rows = [];
+        pillInfo.forEach(p => {
+            let row = 0;
+            while (rows[row] && rows[row].some(o => Math.abs(o.xp - p.xp) < (o.w + p.w) / 2 + 8)) row++;
+            (rows[row] ||= []).push(p);
+            p.row = row;
+        });
+        pillInfo.forEach((p, idx) => {
+            const { ms, xp, row } = p;
+            const msProg = subProg(idx * 0.06, idx * 0.06 + 0.15, pMileston);
+            const slide = easeOut(msProg);
+            const verticalOffset = (1 - slide) * -40;
+            const opacity = slide * Lm;
+            const rowOffsetY = row * 32;
+            const MS_PILL_Y_OFFSET = 56;
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            ctx.translate(0, verticalOffset);
+            ctx.strokeStyle = ms.color;
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([8,6]);
+            ctx.lineDashOffset = -(now / 60) % 14;
+            ctx.globalAlpha = opacity * 0.7;
+            ctx.shadowColor = ms.color; ctx.shadowBlur = 12;
+            ctx.beginPath(); ctx.moveTo(xp, m.top + MS_PILL_Y_OFFSET + 22 + rowOffsetY); ctx.lineTo(xp, y0); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = opacity;
+            ctx.fillStyle = ms.color;
+            ctx.font = `900 ${isMobile ? 13 : 16}px "Arial Black",Arial`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            const txt = ms.label;
+            const tw = ctx.measureText(txt).width;
+            const padX = 10, padY = 5;
+            const pillY = m.top + MS_PILL_Y_OFFSET + rowOffsetY;
+            ctx.fillStyle = 'rgba(0,0,0,0.85)';
+            ctx.fillRect(xp - tw/2 - padX, pillY, tw + padX*2, (isMobile?13:16) + padY*2);
+            ctx.strokeStyle = ms.color;
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(xp - tw/2 - padX, pillY, tw + padX*2, (isMobile?13:16) + padY*2);
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = ms.color;
+            ctx.shadowColor = ms.color; ctx.shadowBlur = 14;
+            ctx.fillText(txt, xp, pillY + 4);
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        });
+    }
+
+    // Axes
+    ctx.save();
+    ctx.strokeStyle = '#FFF';
+    ctx.lineWidth = isMobile ? 3 : 4.5;
+    ctx.shadowColor = 'rgba(255,255,255,0.4)';
+    ctx.shadowBlur = 14;
+    const axDraw = easeOut(pAxes);
+    ctx.beginPath();
+    ctx.moveTo(x0, m.top);
+    ctx.lineTo(x0, m.top + ch * axDraw);
+    if (axDraw >= 1) ctx.lineTo(x0 + cw * axDraw, y0);
+    ctx.stroke();
+    if (axDraw < 1) {
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x0 + cw * axDraw, y0);
+        ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // Y tick labels
+    ctx.save();
+    ctx.globalAlpha = pYlabels;
+    ctx.fillStyle = '#FFF';
+    ctx.font = '900 ' + (isMobile ? 14 : 18) + 'px "Arial Black",Arial';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let v = tickStart; v <= yMax; v += tickStep) {
+        const yp = yP(v);
+        ctx.strokeStyle = '#FFF'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x0-12, yp); ctx.lineTo(x0, yp); ctx.stroke();
+        ctx.fillText(String(Math.round(v)), x0-16, yp);
+    }
+    ctx.restore();
+
+    // X tick labels
+    ctx.save();
+    ctx.globalAlpha = pXlabels;
+    ctx.fillStyle = '#FFF';
+    ctx.font = '900 ' + (isMobile ? 13 : 18) + 'px "Arial Black",Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (let y = Math.ceil(minYear/xStep)*xStep; y <= maxYear; y += xStep) {
+        const xp = xP(y);
+        ctx.strokeStyle = '#FFF'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(xp, y0); ctx.lineTo(xp, y0+12); ctx.stroke();
+        ctx.fillText(String(y), xp, y0+18);
+    }
+    ctx.restore();
+
+    // Y-axis label
+    ctx.save();
+    ctx.globalAlpha = pYlabels;
+    ctx.translate(isMobile ? 22 : 28, m.top + ch/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '900 ' + (isMobile ? 12 : 15) + 'px "Arial Black",Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('INDEX  (BASELINE = 100)', 0, 0);
+    ctx.restore();
+
+    // DATA LINES
+    function drawAnimatedLine(getY, color, lineProg, lineLabel, layerAlpha) {
+        if (lineProg <= 0 || layerAlpha <= 0.001) return;
+        const draw = easeInOut(lineProg);
+        const visYears = (maxYear - minYear) * draw + minYear;
+        ctx.save();
+        ctx.globalAlpha = layerAlpha;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = isMobile ? 4 : 5.5;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.shadowColor = color; ctx.shadowBlur = 22;
+        ctx.beginPath();
+        let lastX = 0, lastY = 0;
+        let drawn = false;
+        for (let i = 0; i < filtered.length; i++) {
+            const d = filtered[i];
+            if (d.year > visYears) {
+                if (i > 0) {
+                    const prev = filtered[i-1];
+                    const t = (visYears - prev.year) / (d.year - prev.year);
+                    const iy = prev[getY === wAccess ? 'w' : 'p'] + (d[getY === wAccess ? 'w' : 'p'] - prev[getY === wAccess ? 'w' : 'p']) * t;
+                    lastX = xP(visYears);
+                    lastY = yP(iy);
+                    ctx.lineTo(lastX, lastY);
+                }
+                break;
+            }
+            const xp = xP(d.year), yp = yP(getY(d));
+            if (!drawn) { ctx.moveTo(xp, yp); drawn = true; }
+            else ctx.lineTo(xp, yp);
+            lastX = xp; lastY = yp;
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        if (lineProg < 1 && lineProg > 0.02) {
+            ctx.save();
+            ctx.globalAlpha = layerAlpha;
+            const glowR = 18 + 6 * Math.sin(performance.now() / 120);
+            const grad = ctx.createRadialGradient(lastX, lastY, 0, lastX, lastY, glowR);
+            grad.addColorStop(0, '#FFF');
+            grad.addColorStop(0.3, color);
+            grad.addColorStop(1, color + '00');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, glowR, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        if (lineProg >= 1 && pEndDots > 0) {
+            const last = filtered[filtered.length-1];
+            const xp = xP(last.year), yp = yP(getY(last));
+            ctx.save();
+            ctx.globalAlpha = pEndDots * layerAlpha;
+            const gr = ctx.createRadialGradient(xp,yp,0, xp,yp,16);
+            gr.addColorStop(0, color+'FF'); gr.addColorStop(1, color+'00');
+            ctx.fillStyle = gr;
+            ctx.fillRect(xp-16, yp-16, 32, 32);
+            ctx.fillStyle = color;
+            ctx.font = '900 ' + (isMobile ? 11 : 13) + 'px "Arial Black",Arial';
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.shadowColor = '#000'; ctx.shadowBlur = 10;
+            ctx.fillText(lineLabel, xp + 12, yp);
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+    }
+
+    const wAccess = d => d.w;
+    const pAccess = d => d.p;
+    if (Lw > 0.001) drawAnimatedLine(wAccess, '#FFFFFF', pWages, 'WAGES', Lw);
+    if (Lp > 0.001) drawAnimatedLine(pAccess, '#F7931A', pProd, 'PRODUCTIVITY', Lp);
+
+    // Ghost title — above x-axis
+    ctx.save();
+    const titleAlpha = animActive ? pTitle * 0.22 : 0.22;
+    const chartCxAdj = isMobile ? W/2 : m.left + (W - m.left - m.right)/2;
+    const titleFontSize = Math.min(78, Math.round((W - m.left - m.right) / 11));
+    const subTitleFontSize = Math.min(34, Math.round((W - m.left - m.right) / 30));
+    const titleBlockBottom = y0 - 30;
+    const titleY    = titleBlockBottom - subTitleFontSize - 12;
+    const subTitleY = titleBlockBottom;
+    ctx.font = '900 ' + titleFontSize + 'px "Arial Black",Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = `rgba(247,147,26,${titleAlpha})`;
+    ctx.fillText('THE GREAT DIVERGENCE', chartCxAdj, titleY);
+    ctx.font = '900 ' + subTitleFontSize + 'px "Arial Black",Arial';
+    ctx.fillStyle = `rgba(255,255,255,${titleAlpha * 0.7})`;
+    ctx.fillText('1948 — 2024', chartCxAdj, subTitleY);
+    ctx.restore();
+
+    // HOVER
+    if (!animActive) {
+        const inChart = (mx >= x0 && mx <= x0+cw && my >= m.top && my <= y0);
+        const tt = document.getElementById('tooltip');
+        if (inChart) {
+            const yrAtMouse = minYear + (mx - x0) / cw * yearSpan;
+            let snap = filtered[0];
+            for (const d of filtered) {
+                if (Math.abs(d.year - yrAtMouse) < Math.abs(snap.year - yrAtMouse)) snap = d;
+            }
+            const xSnap = xP(snap.year);
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4,4]);
+            ctx.beginPath(); ctx.moveTo(xSnap, m.top); ctx.lineTo(xSnap, y0); ctx.stroke();
+            ctx.restore();
+
+            const lines = [];
+            if (Lw > 0.05) lines.push({v: snap.w, color:'#FFF'});
+            if (Lp > 0.05) lines.push({v: snap.p, color:'#F7931A'});
+            lines.forEach(({v, color}) => {
+                const yp = yP(v);
+                ctx.save();
+                ctx.fillStyle = color;
+                ctx.shadowColor = color; ctx.shadowBlur = 22;
+                ctx.beginPath(); ctx.arc(xSnap, yp, 8, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(xSnap, yp, 8, 0, Math.PI*2); ctx.stroke();
+            });
+
+            const gap  = snap.p - snap.w;
+            const note = NOTES[snap.year] || '';
+            const cpiVal = CPI_YOY[snap.year];
+            tt.innerHTML =
+                `<div class="tt-year">${snap.year}</div>` +
+                (S.show1 ? `<div class="tt-row"><span class="tt-key">Wages</span><span class="tt-val">${snap.w.toFixed(1)}</span></div>` : '') +
+                (S.show2 ? `<div class="tt-row"><span class="tt-key">Productivity</span><span class="tt-val">${snap.p.toFixed(1)}</span></div>` : '') +
+                (S.show5 && cpiVal != null ?
+                    `<div class="tt-row"><span class="tt-key">CPI YoY</span><span class="tt-val" style="color:#FF8C5A;">${cpiVal >= 0 ? '+' : ''}${cpiVal.toFixed(1)}%</span></div>` : '') +
+                (S.show3 && S.show1 && S.show2 ?
+                    `<div class="tt-gap-row"><span class="tt-gap">Gap: ${gap >= 0 ? '+' : ''}${gap.toFixed(1)}</span></div>` : '') +
+                (note ? `<div class="tt-note">${note}</div>` : '');
+
+            const ttW = 280, ttH = tt.offsetHeight || 200;
+            let tx = mx + 18, ty = my - ttH/2;
+            if (tx + ttW > W - 20) tx = mx - ttW - 18;
+            ty = Math.max(10, Math.min(ty, H - ttH - 10));
+            tt.style.left = tx + 'px';
+            tt.style.top  = ty + 'px';
+            tt.classList.add('show');
+        } else {
+            tt.classList.remove('show');
+        }
+    } else {
+        document.getElementById('tooltip').classList.remove('show');
+    }
+
+    // Statistics
+    const f0 = filtered[0], fN = filtered[filtered.length-1];
+    const wDelta = ((fN.w - f0.w) / f0.w * 100);
+    const pDelta = ((fN.p - f0.p) / f0.p * 100);
+    const gapPts = (fN.p - fN.w) - (f0.p - f0.w);
+    document.getElementById('s1').textContent = (wDelta>=0?'+':'') + wDelta.toFixed(0) + '%';
+    document.getElementById('s2').textContent = (pDelta>=0?'+':'') + pDelta.toFixed(0) + '%';
+    document.getElementById('s3').textContent = (gapPts>=0?'+':'') + gapPts.toFixed(0) + 'pts';
+    document.getElementById('s4').textContent = S.y2 - S.y1;
+}
+
+function loop() { draw(); requestAnimationFrame(loop); }
+loop();
+</script>
+</body>
+</html>
